@@ -1,10 +1,13 @@
 import React from 'react'
 import axios from 'axios'
 import { useState, useEffect } from 'react'
-
+import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 function users() {
 
     const [user, setUser] = useState([])
+
+    const navigate = useNavigate()
 
     // Get all users
     const getUser = async () => {
@@ -27,6 +30,9 @@ function users() {
     useEffect(() => {
         getUser()
     }, [])
+
+
+
 
 
     // Change user status
@@ -99,7 +105,7 @@ function users() {
                         <div className="section-header-breadcrumb">
 
                             <div className="breadcrumb-item active">
-                                <a href="#">Dashboard</a>
+                                <Link to="/dashboard">Dashboard</Link>
                             </div>
 
                             <div className="breadcrumb-item">
@@ -157,6 +163,7 @@ function users() {
 
                                                         <th>Created At</th>
 
+                                                        <th>Action</th>
                                                         <th>Action</th>
 
                                                     </tr>
@@ -232,6 +239,18 @@ function users() {
                                                             <td>
                                                                 {item.createdAt}
                                                             </td>
+                                                            <td>
+                                                        
+                                                      
+                                                                    <Link
+                                                                        to={`/profile/${item.id}`}
+                                                                        className="btn btn-primary btn-sm"
+                                                                    >
+                                                                        View
+                                                                    </Link>
+                                                                </td>
+
+                                                      
 
 
                                                             {/* DELETE */}

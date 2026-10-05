@@ -61,9 +61,9 @@ function Sidebar() {
             </ul>
           </li>
           <li>
-            <a className="nav-link" href="blank.html">
-              <i className="far fa-square" /> <span>Blank Page</span>
-            </a>
+            <Link to="/cars"className="nav-link" >
+              <i className="far fa-square" /> <span>Cars</span>
+            </Link>
           </li>
           <li className="nav-item dropdown">
             <a href="#" className="nav-link has-dropdown">

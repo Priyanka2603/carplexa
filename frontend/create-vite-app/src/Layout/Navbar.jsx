@@ -1,6 +1,17 @@
 import React from 'react'
+import {useNavigate,Link} from 'react-router-dom'
+
 
 function Navbar() {
+
+ 
+  const navigate = useNavigate();
+const user = JSON.parse(localStorage.getItem("user"));
+
+ const handleLogout = () => {
+    localStorage.removeItem("isLoggedIn");
+    navigate("/");
+};
   return (
     <>
   <nav className="navbar navbar-expand-lg main-navbar">
@@ -281,7 +292,7 @@ function Navbar() {
     <li className="dropdown">
       <a
         href="#"
-        data-toggle="dropdown"
+        data-bs-toggle="dropdown"
         className="nav-link dropdown-toggle nav-link-lg nav-link-user"
       >
         <img
@@ -293,9 +304,9 @@ function Navbar() {
       </a>
       <div className="dropdown-menu dropdown-menu-right">
         <div className="dropdown-title">Logged in 5 min ago</div>
-        <a href="features-profile.html" className="dropdown-item has-icon">
-          <i className="far fa-user" /> Profile
-        </a>
+<Link to={`/profile/${user.user.id}`} className="dropdown-item has-icon">
+    <i className="far fa-user" /> Profile
+</Link>
         <a href="features-activities.html" className="dropdown-item has-icon">
           <i className="fas fa-bolt" /> Activities
         </a>
@@ -303,7 +314,7 @@ function Navbar() {
           <i className="fas fa-cog" /> Settings
         </a>
         <div className="dropdown-divider" />
-        <a href="#" className="dropdown-item has-icon text-danger">
+        <a onClick={handleLogout} className="dropdown-item has-icon text-danger">
           <i className="fas fa-sign-out-alt" /> Logout
         </a>
       </div>

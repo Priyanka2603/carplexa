@@ -1,6 +1,127 @@
+const { where } = require("sequelize");
 const db = require("../models")
+const jwt = require("jsonwebtoken")
+const bcrypt = require("bcrypt")
 // const helper= require("")
 module.exports = {
+   signUp: async (req, res) => {
+    try {
+        // Check if email already exists
+        const user = await db.users.findOne({
+            where: {
+                email: req.body.email
+            }
+        });
+
+        if (user) {
+            return res.status(409).json({
+                success: false,
+                message: "User already exists"
+            });
+        }
+
+        // Hash password
+        const hash = await bcrypt.hash(req.body.password, 10);
+
+        // Profile image
+        let imageName = null;
+
+        if (req.files && req.files.profile_image) {
+            const profileImage = req.files.profile_image;
+            imageName = Date.now() + "_" + profileImage.name;
+            await profileImage.mv("./uploads/" + imageName);
+        }
+
+        // Create user
+        const createUser = await db.users.create({
+            email: req.body.email,
+            password: hash,
+            first_name: req.body.first_name, 
+            last_name: req.body.last_name,
+            profile_image: imageName,
+            // Don't allow frontend to create admin
+            role: req.body.role,
+            dealer_logo: req.body.dealer_logo,
+            dealer_cover_image: req.body.dealer_cover_image,
+            dealership_name: req.body.dealership_name,
+            phone: req.body.phone,
+            business_registration_number: req.body.business_registration_number,
+            location: req.body.location,
+            latitude: req.body.latitude,
+            longitude: req.body.longitude,
+            about: req.body.about,
+            login_time: req.body.login_time,
+            device_type: req.body.device_type,
+            device_token: req.body.device_token,
+            socket_id: req.body.socket_id,
+            social_id: req.body.social_id,
+            social_type: req.body.social_type,
+            forget_hash: req.body.forget_hash,
+            forget_hash_expiry: req.body.forget_hash_expiry,
+            // New users can be active by default
+            status: req.body.status || "active"
+        });
+
+        return res.status(201).json({
+            success: true,
+            message: "User registered successfully",
+            data: createUser
+        });
+
+    } catch (err) {
+        console.log(err);
+
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong",
+            error: err.message
+        });
+    }
+},
+    login: async(req,res)=>{
+        try{
+            const user = await db.users.findOne({where:{email:req.body.email}})
+      
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: "user not found"
+                });
+
+            }
+            if(user.role !== "admin"){
+                 return res.status(404).json({
+                    success: false,
+                    message: "Only admin can login"
+                });
+            }
+            
+            // const checkedPassword = await bcrypt.compare(
+            //     req.body.password,
+            //     user.password
+
+            // )
+            if(user.password != req.body.password)
+            {
+            // if(!checkedPassword){
+                return res.status(404).json({
+                    success: false,
+                    message: "Wrong password! Try again"
+                });
+            }
+              return res.status(200).json({
+                success: true,
+                message: "login successfully",
+                user:user
+                
+            });
+
+
+        }catch(err){
+
+        }
+
+    },
     getUserList: async (req, res) => {
         try {
             const users = await db.users.findAll();
@@ -19,6 +140,37 @@ module.exports = {
             });
 
         } catch (err) {
+            console.log(err);
+
+            return res.status(500).json({
+                success: false,
+                message: "Something went wrong",
+                error: err.message
+            });
+        }
+    },
+    getUserProfile: async (req, res) => {
+        try{
+
+
+            console.log("nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn");
+            
+            const user = await db.users.findOne({where:{id: req.query.id},raw:true});
+             if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Users not found"
+                });
+            }
+
+            return res.status(200).json({
+                    success: true,
+                    message: "user found successfully",
+                    user:user
+                });
+            
+
+        }catch (err) {
             console.log(err);
 
             return res.status(500).json({
@@ -69,7 +221,7 @@ module.exports = {
 
         }
     },
-    deleteUser: async (req, res) => {
+     deleteUser: async (req, res) => {
         try {
             const user = await db.users.findOne({ where: { id: req.body.id } });
 
@@ -101,4 +253,83 @@ module.exports = {
             });
         }
     },
+    editProfile: async (req, res) => {
+    try {
+
+        const user = await db.users.findOne({
+            where: { id: req.params.id }
+        });
+        console.log(user,"kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        if (!req.files || !req.files.profile_image) {
+            return res.status(400).json({
+                success: false,
+                message: "Image required"
+            });
+        }
+
+        const profileImage = req.files.profile_image;
+
+        // Create unique image name
+        const imageName = Date.now() + "_" + profileImage.name;
+
+        // Save actual image inside uploads folder
+        await profileImage.mv("./uploads/" + imageName);
+
+        // Save only image name in database
+        const editUser = await db.users.update(
+            {
+                profile_image: imageName
+            },
+            {
+                where: { id: req.params.id }
+            }
+        );
+
+        if (editUser[0] > 0) {
+            return res.status(200).json({
+                success: true,
+                message: "User profile updated successfully",
+                data: {
+                    profile_image: imageName
+                }
+            });
+        }
+
+        return res.status(400).json({
+            success: false,
+            message: "Profile image was not updated"
+        });
+
+    } catch (err) {
+
+        console.log(err);
+
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong",
+            error: err.message
+        });
+    }
+},
+logout:async(req,res)=>{
+    try{
+        
+        
+    }catch(err){
+        console.log(err,"kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
+         return res.status(500).json({
+            success: false,
+            message: "Something went wrong",
+            error: err.message
+        });
+    }
+}
 }
