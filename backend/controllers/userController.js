@@ -39,8 +39,7 @@ module.exports = {
             first_name: req.body.first_name, 
             last_name: req.body.last_name,
             profile_image: imageName,
-            // Don't allow frontend to create admin
-            role: req.body.role,
+            role: req.body.role === "dealer" ? "dealer" : "user",
             dealer_logo: req.body.dealer_logo,
             dealer_cover_image: req.body.dealer_cover_image,
             dealership_name: req.body.dealership_name,
@@ -80,7 +79,13 @@ module.exports = {
 },
     login: async(req,res)=>{
         try{
-            const user = await db.users.findOne({where:{email:req.body.email}})
+        if (typeof req.body.email !== "string" || !req.body.email.trim() || typeof req.body.password !== "string" || !req.body.password) {
+            return res.status(400).json({
+                success: false,
+                message: "Email and password are required"
+            });
+        }
+        const user = await db.users.findOne({where:{email:req.body.email}})
       
             if (!user) {
                 return res.status(404).json({
@@ -95,30 +100,48 @@ module.exports = {
                     message: "Only admin can login"
                 });
             }
-            
-            // const checkedPassword = await bcrypt.compare(
-            //     req.body.password,
-            //     user.password
+            if (user.status !== "active") {
+                return res.status(403).json({
+                    success: false,
+                    message: "This administrator account is inactive"
+                });
+            }
 
-            // )
-            if(user.password != req.body.password)
-            {
-            // if(!checkedPassword){
-                return res.status(404).json({
+            const passwordMatches = user.password && await bcrypt.compare(req.body.password, user.password);
+            if (!passwordMatches) {
+                return res.status(401).json({
                     success: false,
                     message: "Wrong password! Try again"
                 });
             }
-              return res.status(200).json({
+
+            if (!process.env.JWT_SECRET) {
+                console.error("JWT_SECRET must be configured before administrators can sign in");
+                return res.status(500).json({
+                    success: false,
+                    message: "Server authentication is not configured"
+                });
+            }
+
+            const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "8h" });
+            return res.status(200).json({
                 success: true,
                 message: "login successfully",
-                user:user
-                
+                token,
+                user: {
+                    id: user.id,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    email: user.email,
+                    role: user.role
+                }
             });
-
-
         }catch(err){
-
+            console.error("Administrator login failed", err);
+            return res.status(500).json({
+                success: false,
+                message: "Unable to sign in"
+            });
         }
 
     },
@@ -238,7 +261,6 @@ module.exports = {
                     success: true,
                     message: "user deleted successfully",
                 });
-
             }
 
 
@@ -319,17 +341,4 @@ module.exports = {
         });
     }
 },
-logout:async(req,res)=>{
-    try{
-        
-        
-    }catch(err){
-        console.log(err,"kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
-         return res.status(500).json({
-            success: false,
-            message: "Something went wrong",
-            error: err.message
-        });
-    }
-}
 }

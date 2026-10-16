@@ -1,4 +1,5 @@
 var createError = require('http-errors');
+require('dotenv').config();
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
@@ -25,7 +26,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 
  app.use(fileUpload());
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(path.join(__dirname, 'uploads')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
@@ -34,9 +35,12 @@ app.use('/users', usersRouter);
 app.use(function(req, res, next) {
   next(createError(404));
 });
-app.listen(process.env.PORT, () => {
-    console.log("Server running on port 5555");
+const PORT = process.env.PORT || 5555;
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
+// server.listen(port);
 // error handler
 app.use(function(err, req, res, next) {
   // set locals, only providing error in development

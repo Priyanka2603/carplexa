@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "nodemon ./bin/www"
+    "start": "nodemon app.js",
+    "create-admin": "node scripts/create-admin.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
